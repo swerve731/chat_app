@@ -1,0 +1,15 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8.1"
+derive_more = { version = "2.0.1", features = ["full"] }
+serde = { version = "1.0.217", features = ["derive"] }
+surrealdb = "2.1.4"
+tokio = { version = "1.43.0", features = ["full"] }
+uuid = { version = "1.13.1", features = ["v4"] }
+
+[dev-dependencies]
+faker_rand = "0.1.1"

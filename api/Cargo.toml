@@ -6,8 +6,6 @@ edition = "2021"
 [dependencies]
 axum = "0.8.1"
 derive_more = { version = "2.0.1", features = ["full"] }
-firebase = "0.9.1"
-firebase-auth-sdk = "0.1.0"
 serde = { version = "1.0.217", features = ["derive"] }
 sqlx = { version = "0.8.3", features = ["postgres"] }
 tokio = { version = "1.43.0", features = ["full"] }

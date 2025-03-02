@@ -1,4 +1,7 @@
 pub mod auth_service;
+pub mod server;
+pub mod messaging_service;
+
 
 use derive_more::From;
 // server::run([auth_service, messaging_service])

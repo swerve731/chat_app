@@ -1,9 +1,9 @@
 <script>
     import { Listgroup, ListgroupItem, Avatar } from 'flowbite-svelte';
     import { TrashBinSolid } from 'flowbite-svelte-icons';
-  </script>
-  
-  <Listgroup active class="self-centerw-100">
+</script>
+<div class="flex items-center justify-center h-screen">
+  <Listgroup active class=" w-50">
     <h3 class="p-1 text-center text-xl font-medium text-gray-900 dark:text-white">User list</h3>
     <ListgroupItem class="text-base font-semibold gap-2">
       <Avatar src="/images/profile-picture-1.webp" size="xs" />Jese Leos
@@ -19,3 +19,4 @@
       Delete user
     </a>
   </Listgroup>
+</div>

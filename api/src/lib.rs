@@ -1,4 +1,7 @@
 pub mod auth_service;
+pub mod server;
+pub mod messaging_service;
+
 
 use derive_more::From;
 // server::run([auth_service, messaging_service])
@@ -11,7 +14,7 @@ pub enum Error {
 
     // -- Externals
     #[from]
-    Io(std::io::Error), // as an example
+    Io(std::io::Error),
 }
 
 // Note: Implement Display as debug, for Web and app error, as anyway those errors will need to be streamed as JSON probably 

@@ -1,14 +1,18 @@
+use chrono::NaiveDateTime;
 use derive_more::From;
+use serde::{Deserialize, Serialize};
+use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
 
 
 
 
+#[derive(Debug, sqlx::FromRow)]
 pub struct User<'a> {
     pub id: Uuid,
     pub username: &'a str,
     pub password: &'a str,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: NaiveDateTime,
 }   
 
 #[derive(Debug, From)]
@@ -52,6 +56,7 @@ impl User<'_> {
         //if the password does not have the required parameters return Err(SignupError::PasswordTooWeak) and indicate what is needed
 
         todo!("set these values accordingly"); 
+
         let has_lowercase = false;
         let has_uppercase = false;
         let has_number = false;
@@ -79,20 +84,37 @@ impl User<'_> {
 
     }
 
-    pub fn validate_username(username: &str) -> Result<(), SignupError> {
-        // a function to validate the username
-        // the username must be unique in the database
-        // if the username is not unique return Err(SignupError::UsernameTaken) and indicate the username that was requested
-        // if the username is unique return Ok(())
+    pub async fn validate_username(pool: &PgPool, username: &str) -> Result<(), SignupError> {
+        let res = query!(
+            "SELECT * FROM users WHERE username = $1",
+            username
+        )
+        .fetch_one(pool)
+        .await;
 
-        todo!("implement this function"); 
-        Ok(())
+        return match res {
+            Ok(_) => Err(SignupError::UsernameTaken{requested_username: username.to_string()}),
+            Err(sqlx::Error::RowNotFound) => Ok(()),
+            Err(err) => Err(err.into())
+        }
     }
 
 
-    pub async fn signup<'a>(username: &'a str, password: &'a str) -> Result<User<'a>, SignupError> {
+    pub async fn signup<'a>(pool: &PgPool, username: &'a str, password: &'a str) -> Result<User<'a>, SignupError> {
         let id = Uuid::new_v4();
-        let created_at = chrono::Utc::now();
+        let created_at = sqlx::types::chrono::Utc::now().naive_utc();
+
+
+        let _ = Self::validate_username(&pool, username).await?;
+
+        let _ = query!(
+            "INSERT INTO users (id, username, password, created_at) VALUES ($1, $2, $3, $4)",
+            id, username, password, created_at
+        )
+            .execute(pool)
+            .await?;
+
+        
 
         Ok(User { 
             id, 
@@ -101,6 +123,16 @@ impl User<'_> {
             created_at 
         })
     }
+
+    // pub async fn get_user_by_username(pool: &PgPool, username: &str) -> Result<User, sqlx::Error> {
+    //     query_as!(
+    //         User,
+    //         "SELECT * FROM users WHERE username = $1",
+    //         username
+    //     )
+    //     .fetch_one(pool)
+    //     .await
+    // }
 }
 
 

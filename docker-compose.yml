@@ -1,0 +1,18 @@
+# this is to host the postgres database
+# a container for the api will be implemented later
+
+version: "3.8"
+services:
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=chat_user
+      - POSTGRES_PASSWORD=chat_password
+      - POSTGRES_DB=chat_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+volumes:
+  db-data:

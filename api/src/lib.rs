@@ -1,17 +1,18 @@
-pub mod auth_service;
 pub mod server;
-pub mod messaging_service;
-
+pub mod db_service;
 
 use derive_more::From;
 // server::run([auth_service, messaging_service])
 pub type Result<T> = core::result::Result<T, Error>;
+
+
 
 #[derive(Debug, From)]
 pub enum Error {
     // -- fs
     LimitTooHigh { actual: usize, max: usize },
 
+    
     // -- Externals
     #[from]
     Io(std::io::Error),

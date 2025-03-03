@@ -1,22 +1,65 @@
 <script>
-    import { Listgroup, ListgroupItem, Avatar } from 'flowbite-svelte';
-    import { TrashBinSolid } from 'flowbite-svelte-icons';
+  import { Card, Listgroup, Avatar } from 'flowbite-svelte';
+  let list = [
+    {
+      img: { src: '/images/profile-picture-1.webp', alt: 'Neil Sims' },
+      name: 'Neil Sims',
+      email: 'email@windster.com',
+      phone: '123-456-7890'
+    },
+    {
+      img: { src: '/images/profile-picture-2.webp', alt: 'Bonnie Green' },
+      name: 'Bonnie Green',
+      email: 'email@windster.com',
+      phone: '123-456-7890'
+    },
+    {
+      img: { src: '/images/profile-picture-3.webp', alt: 'Michael Gough' },
+      name: 'Michael Gough',
+      email: 'email@windster.com',
+      phone: '123-456-7890'
+    },
+    {
+      img: { src: '/images/profile-picture-3.webp', alt: 'Michael Gough' },
+      name: 'Michael Gough',
+      email: 'email@windster.com',
+      phone: '123-456-7890'
+    },
+    {
+      img: { src: '/images/profile-picture-3.webp', alt: 'Michael Gough' },
+      name: 'Michael Gough',
+      email: 'email@windster.com',
+      phone: '123-456-7890'
+    },
+    {
+      img: { src: '/images/profile-picture-3.webp', alt: 'Michael Gough' },
+      name: 'Michael Gough',
+      email: 'email@windster.com',
+      phone: '123-456-7890'
+    },
+  ];
 </script>
 <div class="flex items-center justify-center h-screen">
-  <Listgroup active class=" w-50">
-    <h3 class="p-1 text-center text-xl font-medium text-gray-900 dark:text-white">User list</h3>
-    <ListgroupItem class="text-base font-semibold gap-2">
-      <Avatar src="/images/profile-picture-1.webp" size="xs" />Jese Leos
-    </ListgroupItem>
-    <ListgroupItem class="text-base font-semibold gap-2">
-      <Avatar src="/images/profile-picture-2.webp" size="xs" />Robert Gouth
-    </ListgroupItem>
-    <ListgroupItem class="text-base font-semibold gap-2">
-      <Avatar src="/images/profile-picture-3.webp" size="xs" />Bonnie Green
-    </ListgroupItem>
-    <a href="/" class="flex items-center p-3 text-sm font-medium text-red-600 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-red-500 hover:underline rounded-b-lg">
-      <TrashBinSolid class="w-6 h-6 ms-1 me-2" />
-      Delete user
-    </a>
+<Card padding="xl" size="md">
+  <div class="flex justify-between items-center mb-4">
+    <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Contacts</h5>
+    <a href="/" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-500"> View all </a>
+  </div>
+  <Listgroup items={list} let:item class="border-0 dark:bg-transparent!">
+    <div class="flex items-center space-x-4 rtl:space-x-reverse">
+      <Avatar src={item.img.src} alt={item.img.alt} class="shrink-0" />
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
+          {item.name}
+        </p>
+        <p class="text-sm text-gray-500 truncate dark:text-gray-400">
+          {item.email}
+        </p>
+      </div>
+      <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
+        {item.phone}
+      </div>
+    </div>
   </Listgroup>
+</Card>
 </div>

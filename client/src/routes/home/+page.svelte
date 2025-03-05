@@ -43,7 +43,7 @@
 <Card padding="xl" size="md">
   <div class="flex justify-between items-center mb-4">
     <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Contacts</h5>
-    <a href="/" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-500"> View all </a>
+    <a href="/messaging" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-500"> View all </a>
   </div>
   <Listgroup items={list} let:item class="border-0 dark:bg-transparent!">
     <div class="flex items-center space-x-4 rtl:space-x-reverse">

@@ -4,7 +4,28 @@ use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
 
-#[derive(Debug, sqlx::FromRow, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CustomClaims {
+    user_id: String,
+}
+
+impl CustomClaims {
+
+    const TOKEN_LIFETIME_IN_DAYS: i64 = 1;
+
+    pub fn new(user_id: String) -> Self {
+        Self { user_id }
+    }
+
+    pub fn jwt(&self) -> Result<String, ClaimsError> {
+        let claims = Claims::with_custom_claims(self, Duration::from_days(Self::TOKEN_LIFETIME_IN_DAYS))?;
+        
+        
+    }
+
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct User {
     pub id: Uuid,
     pub username: String,
@@ -12,11 +33,19 @@ pub struct User {
     pub created_at: NaiveDateTime,
 }
 
+#[derive(Debug, From)]
+pub enum ClaimsError {
+    #[from]
+    Jwt(simple_jwt::Error),
+}
 
 #[derive(Debug, From)]
 pub enum AuthError {
     #[from]
     Signup(SignupError),
+
+    #[from]
+    Claims(ClaimsError),
 }
 
 #[derive(Debug, From)]
@@ -38,6 +67,32 @@ impl User {
 
 
 
+
+    pub async fn signup(pool: &PgPool, username: &str, password: &str) -> Result<User, SignupError> {
+
+        // TODO ADD ARGON2 HASHING
+        let id = Uuid::new_v4();
+        let created_at = sqlx::types::chrono::Utc::now().naive_utc();
+
+        Self::validate_username(&pool, username).await?;
+        Self::validate_password_strength(password)?;
+
+        query!(
+            "INSERT INTO users (id, username, password, created_at) VALUES ($1, $2, $3, $4)",
+            id, username, password, created_at
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(User {
+            id,
+            username: username.to_string(),
+            password: password.to_string(),
+            created_at,
+        })
+    }
+
+    // helper functions
     pub fn validate_password_strength(password: &str) -> Result<(), SignupError> {
         let length = password.len();
 
@@ -80,27 +135,7 @@ impl User {
         };
     }
 
-    pub async fn signup(pool: &PgPool, username: &str, password: &str) -> Result<User, SignupError> {
-        let id = Uuid::new_v4();
-        let created_at = sqlx::types::chrono::Utc::now().naive_utc();
-
-        Self::validate_username(&pool, username).await?;
-
-        query!(
-            "INSERT INTO users (id, username, password, created_at) VALUES ($1, $2, $3, $4)",
-            id, username, password, created_at
-        )
-        .execute(pool)
-        .await?;
-
-        Ok(User {
-            id,
-            username: username.to_string(),
-            password: password.to_string(),
-            created_at,
-        })
-    }
-
+    // crud helper functions
     pub async fn get_user_by_username(pool: &PgPool, username: &str) -> Result<User, sqlx::Error> {
         query_as!(
             User,
@@ -193,7 +228,7 @@ mod tests {
     
         // test sign up
         let username: String = format!("TestUser{}", Uuid::new_v4().to_string());
-        let password = "password";
+        let password = "Password123#";
         let mut user = User::signup(&pool, &username, password).await.expect("error signing up user");
         user.truncate_created_at(); // to set the precision so that the tests match in precision
 

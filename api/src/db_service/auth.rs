@@ -1,28 +1,52 @@
-use chrono::NaiveDateTime;
+use chrono::{Duration, NaiveDateTime, Utc};
 use derive_more::From;
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CustomClaims {
+pub struct JwtClaims {
     user_id: String,
+    exp: usize,
 }
 
-impl CustomClaims {
-
+impl JwtClaims {
     const TOKEN_LIFETIME_IN_DAYS: i64 = 1;
 
-    pub fn new(user_id: String) -> Self {
-        Self { user_id }
+    // todo add this to .env
+    const SECRET_KEY: &str = "Super-Secret-Key";
+
+    pub fn new(user_id: &str) -> Self {
+        let exp = (Utc::now() + Duration::days(Self::TOKEN_LIFETIME_IN_DAYS)).timestamp() as usize;
+        Self {
+            user_id: user_id.to_string(),
+            exp,
+        }
     }
 
-    pub fn jwt(&self) -> Result<String, ClaimsError> {
-        let claims = Claims::with_custom_claims(self, Duration::from_days(Self::TOKEN_LIFETIME_IN_DAYS))?;
-        // test user.email eoinmitchell39@proton.me
-        
+    pub fn encode(&self) -> Result<String, ClaimsError> {
+        let token = encode(
+            &Header::default(),
+            self,
+            &EncodingKey::from_secret(Self::SECRET_KEY.as_ref()),
+        )?;
+
+        Ok(token.to_string())
     }
 
+    pub fn decode(encoded_token: &str) -> Result<Self, ClaimsError> {
+        // `token` is a struct with 2 fields: `header` and `claims` where `claims` is your own struct.
+        let token = decode::<JwtClaims>(
+            encoded_token,
+            &DecodingKey::from_secret(Self::SECRET_KEY.as_ref()),
+            &Validation::default(),
+        )?;
+
+        // jsonweb token will return ErrorKind Expired Signature if the request token is expired
+        let claims = token.claims;
+        Ok(claims)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -36,7 +60,12 @@ pub struct User {
 #[derive(Debug, From)]
 pub enum ClaimsError {
     #[from]
-    Jwt(simple_jwt::Error),
+    Jwt(jsonwebtoken::errors::Error),
+
+    TokenExpired {
+        exp: usize,
+        current_time: usize,
+    },
 }
 
 #[derive(Debug, From)]
@@ -50,8 +79,13 @@ pub enum AuthError {
 
 #[derive(Debug, From)]
 pub enum SignupError {
-    UsernameTaken { requested_username: String },
-    PasswordTooShort { min_length: usize, actual_length: usize },
+    UsernameTaken {
+        requested_username: String,
+    },
+    PasswordTooShort {
+        min_length: usize,
+        actual_length: usize,
+    },
     PasswordTooWeak {
         has_lowercase: bool,
         has_uppercase: bool,
@@ -65,11 +99,11 @@ pub enum SignupError {
 impl User {
     const MIN_PASSWORD_LENGTH: usize = 6;
 
-
-
-
-    pub async fn signup(pool: &PgPool, username: &str, password: &str) -> Result<User, SignupError> {
-
+    pub async fn signup(
+        pool: &PgPool,
+        username: &str,
+        password: &str,
+    ) -> Result<User, SignupError> {
         // TODO ADD ARGON2 HASHING
         let id = Uuid::new_v4();
         let created_at = sqlx::types::chrono::Utc::now().naive_utc();
@@ -79,7 +113,10 @@ impl User {
 
         query!(
             "INSERT INTO users (id, username, password, created_at) VALUES ($1, $2, $3, $4)",
-            id, username, password, created_at
+            id,
+            username,
+            password,
+            created_at
         )
         .execute(pool)
         .await?;
@@ -119,12 +156,9 @@ impl User {
     }
 
     pub async fn validate_username(pool: &PgPool, username: &str) -> Result<(), SignupError> {
-        let res = query!(
-            "SELECT * FROM users WHERE username = $1",
-            username
-        )
-        .fetch_one(pool)
-        .await;
+        let res = query!("SELECT * FROM users WHERE username = $1", username)
+            .fetch_one(pool)
+            .await;
 
         return match res {
             Ok(_) => Err(SignupError::UsernameTaken {
@@ -147,10 +181,7 @@ impl User {
     }
 
     pub async fn delete_user_by_id(pool: &PgPool, id: Uuid) -> Result<User, sqlx::Error> {
-        query_as!(
-            User,
-            "DELETE FROM users WHERE id = $1 RETURNING *", 
-            id)
+        query_as!(User, "DELETE FROM users WHERE id = $1 RETURNING *", id)
             .fetch_one(pool)
             .await
     }
@@ -162,13 +193,25 @@ mod tests {
     use chrono::Timelike;
 
     impl User {
-        pub fn truncate_created_at(&mut self){
+        pub fn truncate_created_at(&mut self) {
             // This is for testing the time of creation of the user
             // use it when comparing results so that the precision matches
             self.created_at = self.created_at.with_nanosecond(0).unwrap();
         }
     }
 
+    #[test]
+    fn test_jwt() {
+        let user_id = "1234";
+        let user_claims = JwtClaims::new(user_id);
+
+        let token = user_claims.encode().expect("error encoding jwt");
+
+        let decoded_claims = JwtClaims::decode(&token).expect("error decoding jwt token to claims");
+
+        assert_eq!(user_claims, decoded_claims);
+        println!("{}", token)
+    }
 
     #[test]
     fn test_validate_password_strength() {
@@ -218,22 +261,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_signup() {
-        let pool = crate::db_service::get_connection_pool().await.expect("error getting pg pool");
+        let pool = crate::db_service::get_connection_pool()
+            .await
+            .expect("error getting pg pool");
 
-
-        // test sign up signin and check that the db matches 
-        // test creating a user with the same username 
+        // test sign up signin and check that the db matches
+        // test creating a user with the same username
         // test signing in user
         // delete the test user
-    
+
         // test sign up
         let username: String = format!("TestUser{}", Uuid::new_v4().to_string());
         let password = "Password123#";
-        let mut user = User::signup(&pool, &username, password).await.expect("error signing up user");
+        let mut user = User::signup(&pool, &username, password)
+            .await
+            .expect("error signing up user");
         user.truncate_created_at(); // to set the precision so that the tests match in precision
 
         // check that the user was created
-        let mut get_user_res = User::get_user_by_username(&pool, &username).await.expect("Error getting user by username");
+        let mut get_user_res = User::get_user_by_username(&pool, &username)
+            .await
+            .expect("Error getting user by username");
         get_user_res.truncate_created_at();
         assert_eq!(user, get_user_res);
 
@@ -249,14 +297,12 @@ mod tests {
             }
         }
 
-
         // todo!("test signing in user");
 
-        let mut delete_user_res = User::delete_user_by_id(&pool, user.id).await.expect("Error deleting test user");
+        let mut delete_user_res = User::delete_user_by_id(&pool, user.id)
+            .await
+            .expect("Error deleting test user");
         delete_user_res.truncate_created_at();
         assert_eq!(user, delete_user_res);
-
-
-
     }
 }

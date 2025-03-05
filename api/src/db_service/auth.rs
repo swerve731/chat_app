@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
 
+type JwtTokenString = String;
+
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JwtClaims {
     user_id: String,
@@ -25,7 +27,7 @@ impl JwtClaims {
         }
     }
 
-    pub fn encode(&self) -> Result<String, ClaimsError> {
+    pub fn encode(&self) -> Result<JwtTokenString, ClaimsError> {
         let token = encode(
             &Header::default(),
             self,
@@ -35,7 +37,7 @@ impl JwtClaims {
         Ok(token.to_string())
     }
 
-    pub fn decode(encoded_token: &str) -> Result<Self, ClaimsError> {
+    pub fn decode(encoded_token: &JwtTokenString) -> Result<Self, ClaimsError> {
         // `token` is a struct with 2 fields: `header` and `claims` where `claims` is your own struct.
         let token = decode::<JwtClaims>(
             encoded_token,
@@ -78,6 +80,19 @@ pub enum AuthError {
 }
 
 #[derive(Debug, From)]
+pub enum LoginError {
+    WrongPassword,
+    UsernameNotFound {
+        requested_username: String,
+    },
+    #[from]
+    Database(sqlx::Error),
+
+    #[from]
+    JwtClaims(ClaimsError),
+}
+
+#[derive(Debug, From)]
 pub enum SignupError {
     UsernameTaken {
         requested_username: String,
@@ -98,6 +113,31 @@ pub enum SignupError {
 
 impl User {
     const MIN_PASSWORD_LENGTH: usize = 6;
+
+    pub async fn signin(
+        pool: &PgPool,
+        username: &str,
+        password: &str,
+    ) -> Result<JwtTokenString, LoginError> {
+        return match Self::get_user_by_username(pool, username).await {
+            Ok(user) => {
+                if user.password != password {
+                    return Err(LoginError::WrongPassword);
+                }
+
+                let claims = JwtClaims::new(&user.id.to_string());
+                let token = claims.encode()?;
+
+                Ok(token)
+            }
+            Err(err) => match err {
+                sqlx::Error::RowNotFound => Err(LoginError::UsernameNotFound {
+                    requested_username: username.to_string(),
+                }),
+                _ => Err(LoginError::Database(err)),
+            },
+        };
+    }
 
     pub async fn signup(
         pool: &PgPool,
@@ -260,7 +300,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_signup() {
+    async fn test_signup_signin() {
         let pool = crate::db_service::get_connection_pool()
             .await
             .expect("error getting pg pool");
@@ -297,7 +337,37 @@ mod tests {
             }
         }
 
-        // todo!("test signing in user");
+        //successful signin with correct credentials
+        let signin_jwt = User::signin(&pool, &user.username, &user.password)
+            .await
+            .expect("error signing in user");
+        let claims = JwtClaims::decode(&signin_jwt).expect("Error decoding jwt to claims");
+
+        assert_eq!(user.id.to_string(), claims.user_id);
+
+        // test for wrong password
+        let wrong_password_signin_res = User::signin(&pool, &user.username, "WrongPassword").await;
+        assert!(wrong_password_signin_res.is_err());
+        if let Err(err) = wrong_password_signin_res {
+            match err {
+                LoginError::WrongPassword => {}
+                err => panic!("unexpected error (should be wrong_password): {:?}", err),
+            }
+        }
+
+        // test for username that does not exist
+        let invalid_test_username = format!("invalid_username_{}", Uuid::new_v4().to_string());
+        let invalid_username_signin_res =
+            User::signin(&pool, &invalid_test_username, &user.password).await;
+        assert!(invalid_username_signin_res.is_err());
+        if let Err(err) = invalid_username_signin_res {
+            match err {
+                LoginError::UsernameNotFound { requested_username } => {
+                    assert_eq!(requested_username, invalid_test_username);
+                }
+                err => panic!("unexpected error (should be username_not_found): {:?}", err),
+            }
+        }
 
         let mut delete_user_res = User::delete_user_by_id(&pool, user.id)
             .await

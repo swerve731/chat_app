@@ -19,7 +19,7 @@ impl CustomClaims {
 
     pub fn jwt(&self) -> Result<String, ClaimsError> {
         let claims = Claims::with_custom_claims(self, Duration::from_days(Self::TOKEN_LIFETIME_IN_DAYS))?;
-        
+        // test user.email
         
     }
 

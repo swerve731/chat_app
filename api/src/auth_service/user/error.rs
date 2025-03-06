@@ -1,5 +1,6 @@
 use super::super::claims::error::ClaimsError;
 use derive_more::From;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, From)]
 pub enum SignInError {
@@ -23,6 +24,7 @@ pub enum SignUpError {
         min_length: usize,
         actual_length: usize,
     },
+
     PasswordTooWeak {
         has_lowercase: bool,
         has_uppercase: bool,
@@ -31,4 +33,6 @@ pub enum SignUpError {
     },
     #[from]
     Database(sqlx::Error),
+    #[from]
+    JwtClaims(ClaimsError),
 }

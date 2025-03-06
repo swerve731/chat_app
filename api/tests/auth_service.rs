@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use api::{
     auth_service::{
         claims::*,
@@ -86,15 +88,24 @@ async fn test_signup_signin() {
     // test sign up
     let username: String = format!("TestUser{}", Uuid::new_v4().to_string());
     let password = "Password123#";
-    let mut user = User::signup(&pool, &username, password)
+    let token = User::signup(&pool, &username, password)
         .await
         .expect("error signing up user");
+
+    let claims = JwtClaims::decode(&token).expect("error decoding jwt token");
+    let mut user = User::get_user_by_id(
+        &pool,
+        Uuid::from_str(&claims.user_id).expect("error converting to uuid"),
+    )
+    .await
+    .expect("error getting user by id");
     truncate_created_at(&mut user); // to set the precision so that the tests match in precision
 
     // check that the user was created
     let mut get_user_res = User::get_user_by_username(&pool, &username)
         .await
         .expect("Error getting user by username");
+
     truncate_created_at(&mut get_user_res);
     assert_eq!(user, get_user_res);
 

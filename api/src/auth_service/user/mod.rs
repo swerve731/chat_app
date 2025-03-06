@@ -46,7 +46,7 @@ impl User {
         pool: &PgPool,
         username: &str,
         password: &str,
-    ) -> Result<User, SignUpError> {
+    ) -> Result<JwtTokenString, SignUpError> {
         // TODO ADD ARGON2 HASHING
         let id = Uuid::new_v4();
         let created_at = sqlx::types::chrono::Utc::now().naive_utc();
@@ -64,12 +64,9 @@ impl User {
         .execute(pool)
         .await?;
 
-        Ok(User {
-            id,
-            username: username.to_string(),
-            password: password.to_string(),
-            created_at,
-        })
+        let jwt_token = JwtClaims::new(&id.to_string()).encode()?;
+
+        Ok(jwt_token)
     }
 
     // helper functions
@@ -118,6 +115,16 @@ impl User {
             User,
             "SELECT id, username, password, created_at FROM users WHERE username = $1",
             username
+        )
+        .fetch_one(pool)
+        .await
+    }
+
+    pub async fn get_user_by_id(pool: &PgPool, id: Uuid) -> Result<User, sqlx::Error> {
+        query_as!(
+            User,
+            "SELECT id, username, password, created_at FROM users WHERE id = $1",
+            id
         )
         .fetch_one(pool)
         .await

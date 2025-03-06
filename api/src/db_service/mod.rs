@@ -1,11 +1,10 @@
 use sqlx::PgPool;
 
-pub mod auth;
 pub mod messages;
 
-const DATABASE_URL: & str = "postgres://chat_user:chat_password@localhost:5432/chat_db";
+const DATABASE_URL: &str = "postgres://chat_user:chat_password@localhost:5432/chat_db";
 
-async fn get_connection_pool() -> Result<PgPool, sqlx::Error> {
+pub async fn get_connection_pool() -> Result<PgPool, sqlx::Error> {
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(5)
         .connect(DATABASE_URL)
@@ -13,7 +12,6 @@ async fn get_connection_pool() -> Result<PgPool, sqlx::Error> {
 
     Ok(pool)
 }
-
 
 // tests
 #[cfg(test)]

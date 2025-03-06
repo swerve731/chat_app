@@ -4,7 +4,6 @@ use axum::{
     response::IntoResponse,
 };
 use derive_more::From;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, From)]
 pub enum SignInError {

@@ -1,7 +1,6 @@
 use super::claims::error::*;
 use super::user::error::*;
 
-use axum::http::{self, StatusCode};
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
 

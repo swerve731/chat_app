@@ -2,11 +2,7 @@ use derive_more::From;
 
 use axum::{
     extract::{MatchedPath, State},
-    http::{
-        self,
-        header::{self, HeaderMap, HeaderName},
-        Request,
-    },
+    http::{self, header, Request},
     response::{IntoResponse, Response},
     routing::*,
     Form, Router,
@@ -17,7 +13,7 @@ use tower_http::trace::TraceLayer;
 use tracing::{info, info_span, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::auth_service::{self, user::error::*};
+use crate::auth_service;
 
 #[derive(Debug, From)]
 pub enum ServerError {

@@ -122,55 +122,6 @@ pub async fn signup_service(
             )
                 .into_response()
         }
-        Err(e) => match e {
-            SignUpError::UsernameTaken { requested_username } => {
-                (
-                    http::status::StatusCode::CONFLICT,
-                    format!(
-                        "Username {} is already taken. Please choose a different username.",
-                        requested_username
-                    ),
-                )
-                    .into_response()
-            }
-            SignUpError::PasswordTooShort {
-                min_length,
-                actual_length,
-            } => (
-                http::status::StatusCode::BAD_REQUEST,
-                format!(
-                    "Password must be at least {} characters long. You provided a password of {} characters.",
-                    min_length, actual_length
-                ),
-            )
-                .into_response(),
-            SignUpError::PasswordTooWeak {
-                has_lowercase,
-                has_uppercase,
-                has_number,
-                has_special,
-            } => {
-                let mut password_requirements = std::collections::HashMap::new();
-                    password_requirements.insert("lowercase", has_lowercase);
-                    password_requirements.insert("uppercase", has_uppercase);
-                    password_requirements.insert("number", has_number);
-                    password_requirements.insert("special", has_special);
-
-                (
-                    http::status::StatusCode::BAD_REQUEST,
-                    axum::Json(password_requirements),
-                )
-                    .into_response()
-            }
-            SignUpError::JwtClaims(_claims_error) => (
-                http::status::StatusCode::INTERNAL_SERVER_ERROR,
-                "Error generating authentication token. Please try again later.".to_string(),
-            )
-                .into_response(),
-            SignUpError::Database(e) => {
-                tracing::error!("Database error while signingup user {:?}", e);
-                http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        },
+        Err(e) => e.into_response(),
     }
 }

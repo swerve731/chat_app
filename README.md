@@ -42,7 +42,7 @@ A real-time chat application built with Rust, Axum, Tauri, Svelte, and PostgreSQ
     cd api
     ```
 2. **Run sqlx migrations to initialize db**
-    ``bash
+    ```bash
     sqlx migrate run
     ```
 3. **Start the API:**

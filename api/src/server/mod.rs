@@ -1,6 +1,13 @@
 use derive_more::From;
 
-use axum::{extract::MatchedPath, http::Request, response::Response, routing::*, Router};
+use axum::{
+    extract::{MatchedPath, State},
+    http::{self, Request},
+    response::{IntoResponse, Response},
+    routing::*,
+    Router,
+};
+use sqlx::PgPool;
 use tower_http::trace::TraceLayer;
 use tracing::{info, info_span, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -13,6 +20,18 @@ pub enum ServerError {
 }
 
 const HOST_PORT: &str = "0.0.0.0:3000";
+
+#[derive(Clone)]
+pub struct AppState {
+    pool: PgPool,
+}
+
+impl AppState {
+    fn new(pool: PgPool) -> Self {
+        AppState { pool }
+    }
+}
+
 pub async fn run_server() -> Result<(), crate::ServerError> {
     tracing_subscriber::registry()
         .with(
@@ -24,12 +43,16 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
 
     let pool = crate::db_service::get_connection_pool().await?;
 
+    let app_state = AppState::new(pool);
+
+    let auth_routes = auth_routes(app_state.clone());
     let app = Router::new()
+        .with_state(app_state)
         .route(
             "/health",
             get(|| async { "All good! will run cargo test with this request later" }),
         )
-        .with_state(pool)
+        // .nest("/auth", auth_routes)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
@@ -59,4 +82,15 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+pub fn auth_routes(state: AppState) -> axum::Router<AppState> {
+    axum::Router::new()
+        .route("/signup", post(signup_service))
+        .route("/signin", post(|| async { "signin" }))
+        .with_state(state)
+}
+
+pub async fn signup_service(State(state): State<AppState>) -> impl IntoResponse {
+    http::status::StatusCode::OK
 }

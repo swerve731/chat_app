@@ -54,12 +54,12 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
 
     let auth_routes = auth_routes(app_state.clone());
     let app = Router::new()
-        .with_state(app_state)
         .route(
             "/health",
             get(|| async { "All good! will run cargo test with this request later" }),
         )
-        // .nest("/auth", auth_routes)
+        .nest("/auth", auth_routes)
+        .with_state(app_state)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
@@ -94,19 +94,40 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
 pub fn auth_routes(state: AppState) -> axum::Router<AppState> {
     axum::Router::new()
         .route("/signup", post(signup_service))
-        .route("/signin", post(|| async { "signin" }))
+        .route("/signin", post(signin_service))
         .with_state(state)
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SignUpForm {
+pub struct AuthForm {
     username: String,
     password: String,
 }
 
+pub async fn signin_service(
+    State(state): State<AppState>,
+    Form(form): Form<AuthForm>,
+) -> impl IntoResponse {
+    let pool = &state.pool;
+
+    let signin_res = auth_service::user::User::signin(pool, &form.username, &form.password).await;
+
+    match signin_res {
+        Ok(jwt_token) => {
+            let headers = [(header::AUTHORIZATION, jwt_token.as_str())];
+            (
+                http::status::StatusCode::OK,
+                headers,
+                "Account successfully authenticated",
+            )
+                .into_response()
+        }
+        Err(e) => e.into_response(),
+    }
+}
 pub async fn signup_service(
     State(state): State<AppState>,
-    Form(form): Form<SignUpForm>,
+    Form(form): Form<AuthForm>,
 ) -> impl IntoResponse {
     let pool = &state.pool;
 

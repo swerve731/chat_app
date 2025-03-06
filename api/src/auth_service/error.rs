@@ -11,8 +11,8 @@ pub enum AuthError {
     Signin(SignInError),
     #[from]
     Signup(SignUpError),
-    // #[from]
-    // Claims(ClaimsError),
+    #[from]
+    Claims(ClaimsError),
 }
 
 impl IntoResponse for AuthError {
@@ -20,6 +20,7 @@ impl IntoResponse for AuthError {
         match self {
             Self::Signin(e) => e.into_response(),
             Self::Signup(e) => e.into_response(),
+            Self::Claims(e) => e.into_response(),
         }
     }
 }

@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use error::{SignInError, SignUpError};
 use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
+pub mod router;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct User {

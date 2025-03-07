@@ -1,6 +1,7 @@
 <!-- src/routes/signup/+page.svelte (or wherever you place this) -->
 <script lang="ts">
 	import { Card, Button, Label, Input, Checkbox } from 'flowbite-svelte';
+	import { goto } from '$app/navigation';
 
 	let errorMessage: string = '';
 	let successMessage: string = '';
@@ -44,16 +45,14 @@
 			const responseText: string = await response.text();
 			if (jwt) {
 				localStorage.setItem('token', jwt);
+
+				// this is how you will get the jwt
+				// let jwt = localStorage.getItem("token")
+
 				successMessage = responseText || 'Account successfully created';
 				errorMessage = '';
-				// console.log('Success: Account created');
-				// console.log('JWT:', jwt);
-				// console.log('Response message:', responseText);
 
-				// Optional: Redirect (uncomment if using SvelteKit)
-				// import { goto } from '$app/navigation';
-				// await goto('/dashboard');
-				window.location.href = '/dashboard'; // Simple redirect
+				await goto('/home');
 			} else {
 				errorMessage = 'No JWT returned in Authorization header';
 				successMessage = '';

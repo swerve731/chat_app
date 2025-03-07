@@ -4,7 +4,6 @@ use chrono::NaiveDateTime;
 use error::{SignInError, SignUpError};
 use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
-pub mod router;
 
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},

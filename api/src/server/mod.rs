@@ -6,7 +6,7 @@ use axum::{
     http::{self, header, Request},
     response::{IntoResponse, Response},
     routing::*,
-    Form, Router,
+    Form, Json, Router,
 };
 use http::Method;
 use serde::{Deserialize, Serialize};
@@ -49,7 +49,8 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
         // allow `GET` and `POST` when accessing the resource
         .allow_methods([Method::GET, Method::POST])
         // allow requests from any origin
-        .allow_origin(Any);
+        .allow_origin(Any)
+        .expose_headers([http::header::AUTHORIZATION]);
 
     let pool = crate::db_service::get_connection_pool().await?;
     let app_state = AppState::new(pool);
@@ -133,7 +134,7 @@ pub async fn signup_service(
     Form(form): Form<AuthForm>,
 ) -> impl IntoResponse {
     let pool = &state.pool;
-
+    println!("HERE");
     let signup_res = auth_service::user::User::signup(pool, &form.username, &form.password).await;
 
     match signup_res {

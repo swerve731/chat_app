@@ -104,7 +104,7 @@ pub fn auth_routes(state: AppState) -> axum::Router<AppState> {
 
 #[derive(Serialize, Deserialize)]
 pub struct AuthForm {
-    username: String,
+    email: String,
     password: String,
 }
 
@@ -114,7 +114,7 @@ pub async fn signin_service(
 ) -> impl IntoResponse {
     let pool = &state.pool;
 
-    let signin_res = auth_service::user::User::signin(pool, &form.username, &form.password).await;
+    let signin_res = auth_service::user::User::signin(pool, &form.email, &form.password).await;
 
     match signin_res {
         Ok(jwt_token) => {
@@ -135,7 +135,7 @@ pub async fn signup_service(
 ) -> impl IntoResponse {
     let pool = &state.pool;
     println!("HERE");
-    let signup_res = auth_service::user::User::signup(pool, &form.username, &form.password).await;
+    let signup_res = auth_service::user::User::signup(pool, &form.email, &form.password).await;
 
     match signup_res {
         Ok(jwt_token) => {

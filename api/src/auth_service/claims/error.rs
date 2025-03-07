@@ -26,7 +26,10 @@ impl IntoResponse for ClaimsError {
                 )
                     .into_response()
             }
-            Self::TokenExpired { exp, current_time } => {
+            Self::TokenExpired {
+                exp: _,
+                current_time: _,
+            } => {
                 tracing::debug!("Jwt token expired");
                 // this will redirect the user to the home page
                 Redirect::to("/").into_response()

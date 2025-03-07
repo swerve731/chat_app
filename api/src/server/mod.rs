@@ -1,5 +1,6 @@
 use derive_more::From;
 
+use crate::auth_service;
 use axum::{
     extract::{MatchedPath, State},
     http::{self, header, Request},
@@ -7,13 +8,13 @@ use axum::{
     routing::*,
     Form, Router,
 };
+use http::Method;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{info, info_span, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use crate::auth_service;
 
 #[derive(Debug, From)]
 pub enum ServerError {
@@ -44,8 +45,13 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let pool = crate::db_service::get_connection_pool().await?;
+    let cors = CorsLayer::new()
+        // allow `GET` and `POST` when accessing the resource
+        .allow_methods([Method::GET, Method::POST])
+        // allow requests from any origin
+        .allow_origin(Any);
 
+    let pool = crate::db_service::get_connection_pool().await?;
     let app_state = AppState::new(pool);
 
     let auth_routes = auth_routes(app_state.clone());
@@ -56,6 +62,7 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
         )
         .nest("/auth", auth_routes)
         .with_state(app_state)
+        .layer(cors)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {

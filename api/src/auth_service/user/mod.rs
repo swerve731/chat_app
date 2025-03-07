@@ -44,9 +44,6 @@ impl User {
 
                     return Ok(token);
                 }
-                // if user.password != password {
-                //     return Err(SignInError::WrongPassword);
-                // }
             }
             Err(err) => match err {
                 sqlx::Error::RowNotFound => Err(SignInError::UsernameNotFound {

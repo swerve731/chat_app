@@ -1,4 +1,5 @@
 use super::super::claims::error::ClaimsError;
+use argon2::password_hash;
 use axum::{
     http::{self},
     response::IntoResponse,
@@ -16,6 +17,9 @@ pub enum SignInError {
 
     #[from]
     JwtClaims(ClaimsError),
+
+    #[from]
+    PasswordHashing(argon2::password_hash::Error),
 }
 
 impl IntoResponse for SignInError {
@@ -36,6 +40,10 @@ impl IntoResponse for SignInError {
             )
                 .into_response(),
             Self::JwtClaims(e) => e.into_response(),
+            Self::PasswordHashing(e) => {
+                tracing::error!("Argon2 hashing error on signin {:?}", e);
+                http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
         }
     }
 }
@@ -60,6 +68,9 @@ pub enum SignUpError {
     Database(sqlx::Error),
     #[from]
     JwtClaims(ClaimsError),
+
+    #[from]
+    PasswordHashing(password_hash::Error),
 }
 
 impl IntoResponse for SignUpError {
@@ -115,6 +126,10 @@ impl IntoResponse for SignUpError {
                     .into_response(),
                 SignUpError::Database(e) => {
                     tracing::error!("Database error while signingup user {:?}", e);
+                    http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                },
+                Self::PasswordHashing(e) => {
+                    tracing::error!("Argon2 hashing error in signup {:?}", e);
                     http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
                 }
         }

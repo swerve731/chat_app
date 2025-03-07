@@ -122,7 +122,7 @@ async fn test_signup_signin() {
     }
 
     //successful signin with correct credentials
-    let signin_jwt = User::signin(&pool, &user.username, &user.password)
+    let signin_jwt = User::signin(&pool, &user.username, password)
         .await
         .expect("error signing in user");
     let claims = JwtClaims::decode(&signin_jwt).expect("Error decoding jwt to claims");

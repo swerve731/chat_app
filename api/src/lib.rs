@@ -1,5 +1,6 @@
 pub mod auth_service;
 pub mod db_service;
+pub mod messaging_service;
 pub mod server;
 
 use derive_more::From;

@@ -1,22 +1,20 @@
 <!-- LOG IN -->
 <script lang="ts">
-  import { Card, Button, Label, Input, Checkbox } from 'flowbite-svelte';
-  import { goto } from '$app/navigation';
+	import { Card, Button, Label, Input, Checkbox } from 'flowbite-svelte';
+	import { goto } from '$app/navigation';
 	let errorMessage: string = '';
 	let successMessage: string = '';
 
 	async function signin(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		const form = event.target as HTMLFormElement;
-		const username = form.email.value; // Assuming 'email' is meant to be 'username'
+		const email = form.email.value; // Assuming 'email' is meant to be 'email'
 		const password = form.password.value;
-		
 
 		// Client-side validation
-		
 
 		const params = new URLSearchParams();
-		params.append('username', username);
+		params.append('email', email);
 		params.append('password', password);
 
 		try {
@@ -48,7 +46,7 @@
 				// console.log('Response message:', responseText);
 
 				// Optional: Redirect (uncomment if using SvelteKit)
-				
+
 				await goto('/home');
 				//window.location.href = '/home'; // Simple redirect
 			} else {
@@ -62,33 +60,41 @@
 			console.error('Network error:', error);
 		}
 	}
-  </script>
-  <div class="flex items-center justify-center h-screen">
-  <Card>
-    <form class="flex flex-col space-y-6" on:submit={signin}>
-      <h3 class="text-xl font-medium text-gray-900 dark:text-white">Log in to our platform</h3>
-      <Label class="space-y-2">
-        <span>Email</span>
-        <Input type="email" name="email" placeholder="name@company.com" required />
-      </Label>
-      <Label class="space-y-2">
-        <span>Your password</span>
-        <Input type="password" name="password" placeholder="•••••" required />
-      </Label>
-      <div class="flex items-start">
-        <Checkbox>Remember me</Checkbox>
-        <a href="/" class="ms-auto text-sm text-blue-700 hover:underline dark:text-primary-500"> Forgot password? </a>
-      </div>
-        {#if errorMessage}
-          <p class="text-red-500">{errorMessage}</p>
-        {/if}
-        {#if successMessage}
-          <p class="text-green-500">{successMessage}</p>
-        {/if}
-      <Button  type="submit" color="blue" class="w-full bg-blue-400 " >Login to your account</Button>
-      <div class="text-sm font-medium text-gray-500 dark:text-gray-300">
-        Not registered? <a href="/signup" class="text-blue-700 hover:underline dark:text-primary-500"> Create account </a>
-      </div>
-    </form>
-  </Card>
+</script>
+
+<div class="flex h-screen items-center justify-center">
+	<Card>
+		<form class="flex flex-col space-y-6" on:submit={signin}>
+			<h3 class="text-xl font-medium text-gray-900 dark:text-white">Log in to our platform</h3>
+			<Label class="space-y-2">
+				<span>Email</span>
+				<Input type="email" name="email" placeholder="name@company.com" required />
+			</Label>
+			<Label class="space-y-2">
+				<span>Your password</span>
+				<Input type="password" name="password" placeholder="•••••" required />
+			</Label>
+			<div class="flex items-start">
+				<Checkbox>Remember me</Checkbox>
+				<a href="/" class="dark:text-primary-500 ms-auto text-sm text-blue-700 hover:underline">
+					Forgot password?
+				</a>
+			</div>
+			{#if errorMessage}
+				<p class="text-red-500">{errorMessage}</p>
+			{/if}
+			{#if successMessage}
+				<p class="text-green-500">{successMessage}</p>
+			{/if}
+			<Button type="submit" color="blue" class="w-full bg-blue-400 ">Login to your account</Button>
+			<div class="text-sm font-medium text-gray-500 dark:text-gray-300">
+				Not registered? <a
+					href="/signup"
+					class="dark:text-primary-500 text-blue-700 hover:underline"
+				>
+					Create account
+				</a>
+			</div>
+		</form>
+	</Card>
 </div>

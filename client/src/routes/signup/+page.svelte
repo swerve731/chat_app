@@ -9,7 +9,7 @@
 	async function signup(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 		const form = event.target as HTMLFormElement;
-		const username = form.email.value; // Assuming 'email' is meant to be 'username'
+		const email = form.email.value; // Assuming 'email' is meant to be 'email'
 		const password = form.password.value;
 		const confirmPassword = form.confirmPassword.value;
 
@@ -20,7 +20,7 @@
 		}
 
 		const params = new URLSearchParams();
-		params.append('username', username);
+		params.append('email', email);
 		params.append('password', password);
 
 		try {
@@ -72,8 +72,8 @@
 			<h3 class="text-xl font-medium text-gray-900 dark:text-white">Sign up for our platform</h3>
 
 			<Label class="space-y-2">
-				<span>Username</span>
-				<Input type="text" name="email" placeholder="username" required />
+				<span>email</span>
+				<Input type="text" name="email" placeholder="email" required />
 			</Label>
 
 			<Label class="space-y-2">

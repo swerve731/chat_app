@@ -9,8 +9,8 @@ use derive_more::From;
 #[derive(Debug, From)]
 pub enum SignInError {
     WrongPassword,
-    UsernameNotFound {
-        requested_username: String,
+    EmailNotFound {
+        requested_email: String,
     },
     #[from]
     Database(sqlx::Error),
@@ -29,9 +29,9 @@ impl IntoResponse for SignInError {
                 tracing::error!("Database error while signingin user {:?}", e);
                 http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
-            Self::UsernameNotFound { requested_username } => (
+            Self::EmailNotFound { requested_email } => (
                 http::status::StatusCode::NOT_FOUND,
-                format!("Username: {}, Not found.", requested_username),
+                format!("Email: {}, Not found.", requested_email),
             )
                 .into_response(),
             Self::WrongPassword => (
@@ -50,8 +50,11 @@ impl IntoResponse for SignInError {
 
 #[derive(Debug, From)]
 pub enum SignUpError {
-    UsernameTaken {
-        requested_username: String,
+    InvalidEmail {
+        requested_email: String,
+    },
+    EmailTaken {
+        requested_email: String,
     },
     PasswordTooShort {
         min_length: usize,
@@ -76,13 +79,22 @@ pub enum SignUpError {
 impl IntoResponse for SignUpError {
     fn into_response(self) -> axum::response::Response {
         match self {
-
-                SignUpError::UsernameTaken { requested_username } => {
+                Self::InvalidEmail { requested_email } => {
+                    (
+                        http::status::StatusCode::BAD_REQUEST,
+                        format!(
+                            "Email {} is not a valid email. Please check your input and try again.",
+                            requested_email
+                        ),
+                    )
+                        .into_response()
+                },
+                SignUpError::EmailTaken { requested_email } => {
                     (
                         http::status::StatusCode::CONFLICT,
                         format!(
-                            "Username {} is already taken. Please choose a different username.",
-                            requested_username
+                            "Email {} is already taken. Please choose a different email, or try logging in.",
+                            requested_email
                         ),
                     )
                         .into_response()

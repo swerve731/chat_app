@@ -13,7 +13,7 @@ use argon2::{
 #[derive(Debug, PartialEq, Eq)]
 pub struct User {
     pub id: Uuid,
-    pub username: String,
+    pub email: String,
     pub password: String,
     pub created_at: NaiveDateTime,
 }
@@ -23,10 +23,10 @@ impl User {
 
     pub async fn signin(
         pool: &PgPool,
-        username: &str,
+        email: &str,
         password: &str,
     ) -> Result<JwtTokenString, SignInError> {
-        return match Self::get_user_by_username(pool, username).await {
+        return match Self::get_user_by_email(pool, email).await {
             Ok(user) => {
                 let parsed_hash = PasswordHash::new(&user.password)?;
 
@@ -46,8 +46,8 @@ impl User {
                 }
             }
             Err(err) => match err {
-                sqlx::Error::RowNotFound => Err(SignInError::UsernameNotFound {
-                    requested_username: username.to_string(),
+                sqlx::Error::RowNotFound => Err(SignInError::EmailNotFound {
+                    requested_email: email.to_string(),
                 }),
                 _ => Err(SignInError::Database(err)),
             },
@@ -56,13 +56,13 @@ impl User {
 
     pub async fn signup(
         pool: &PgPool,
-        username: &str,
+        email: &str,
         password: &str,
     ) -> Result<JwtTokenString, SignUpError> {
         let id = Uuid::new_v4();
         let created_at = sqlx::types::chrono::Utc::now().naive_utc();
 
-        Self::validate_username(&pool, username).await?;
+        Self::validate_email(&pool, email).await?;
         Self::validate_password_strength(password)?;
 
         // encrypt password
@@ -73,9 +73,9 @@ impl User {
             .to_string();
 
         query!(
-            "INSERT INTO users (id, username, password, created_at) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO users (id, email, password, created_at) VALUES ($1, $2, $3, $4)",
             id,
-            username,
+            email,
             password_hash,
             created_at
         )
@@ -113,14 +113,20 @@ impl User {
         };
     }
 
-    pub async fn validate_username(pool: &PgPool, username: &str) -> Result<(), SignUpError> {
-        let res = query!("SELECT * FROM users WHERE username = $1", username)
+    pub async fn validate_email(pool: &PgPool, email: &str) -> Result<(), SignUpError> {
+        if !email_address::EmailAddress::is_valid(email) {
+            return Err(SignUpError::InvalidEmail {
+                requested_email: email.to_string(),
+            });
+        }
+
+        let res = query!("SELECT * FROM users WHERE email = $1", email)
             .fetch_one(pool)
             .await;
 
         return match res {
-            Ok(_) => Err(SignUpError::UsernameTaken {
-                requested_username: username.to_string(),
+            Ok(_) => Err(SignUpError::EmailTaken {
+                requested_email: email.to_string(),
             }),
             Err(sqlx::Error::RowNotFound) => Ok(()),
             Err(err) => Err(err.into()),
@@ -128,11 +134,11 @@ impl User {
     }
 
     // crud helper functions
-    pub async fn get_user_by_username(pool: &PgPool, username: &str) -> Result<User, sqlx::Error> {
+    pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<User, sqlx::Error> {
         query_as!(
             User,
-            "SELECT id, username, password, created_at FROM users WHERE username = $1",
-            username
+            "SELECT id, email, password, created_at FROM users WHERE email = $1",
+            email
         )
         .fetch_one(pool)
         .await
@@ -141,7 +147,7 @@ impl User {
     pub async fn get_user_by_id(pool: &PgPool, id: Uuid) -> Result<User, sqlx::Error> {
         query_as!(
             User,
-            "SELECT id, username, password, created_at FROM users WHERE id = $1",
+            "SELECT id, email, password, created_at FROM users WHERE id = $1",
             id
         )
         .fetch_one(pool)

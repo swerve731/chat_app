@@ -81,14 +81,14 @@ async fn test_signup_signin() {
     let pool = get_connection_pool().await.expect("error getting pg pool");
 
     // test sign up signin and check that the db matches
-    // test creating a user with the same username
+    // test creating a user with the same email
     // test signing in user
     // delete the test user
 
     // test sign up
-    let username: String = format!("TestUser{}", Uuid::new_v4().to_string());
+    let email: String = format!("TestUser{}@email.com", Uuid::new_v4().to_string());
     let password = "Password123#";
-    let token = User::signup(&pool, &username, password)
+    let token = User::signup(&pool, &email, password)
         .await
         .expect("error signing up user");
 
@@ -102,27 +102,27 @@ async fn test_signup_signin() {
     truncate_created_at(&mut user); // to set the precision so that the tests match in precision
 
     // check that the user was created
-    let mut get_user_res = User::get_user_by_username(&pool, &username)
+    let mut get_user_res = User::get_user_by_email(&pool, &email)
         .await
-        .expect("Error getting user by username");
+        .expect("Error getting user by email");
 
     truncate_created_at(&mut get_user_res);
     assert_eq!(user, get_user_res);
 
-    // check that you cannot create a user with the same username
-    let signup_same_username_res = User::signup(&pool, &username, password).await;
-    assert!(signup_same_username_res.is_err());
-    if let Err(err) = signup_same_username_res {
+    // check that you cannot create a user with the same email
+    let signup_same_email_res = User::signup(&pool, &email, password).await;
+    assert!(signup_same_email_res.is_err());
+    if let Err(err) = signup_same_email_res {
         match err {
-            SignUpError::UsernameTaken { requested_username } => {
-                assert_eq!(requested_username, username);
+            SignUpError::EmailTaken { requested_email } => {
+                assert_eq!(requested_email, email);
             }
-            err => panic!("unexpected error (should be username_taken): {:?}", err),
+            err => panic!("unexpected error (should be email_taken): {:?}", err),
         }
     }
 
     //successful signin with correct credentials
-    let signin_jwt = User::signin(&pool, &user.username, password)
+    let signin_jwt = User::signin(&pool, &user.email, password)
         .await
         .expect("error signing in user");
     let claims = JwtClaims::decode(&signin_jwt).expect("Error decoding jwt to claims");
@@ -130,7 +130,7 @@ async fn test_signup_signin() {
     assert_eq!(user.id.to_string(), claims.user_id);
 
     // test for wrong password
-    let wrong_password_signin_res = User::signin(&pool, &user.username, "WrongPassword").await;
+    let wrong_password_signin_res = User::signin(&pool, &user.email, "WrongPassword").await;
     assert!(wrong_password_signin_res.is_err());
     if let Err(err) = wrong_password_signin_res {
         match err {
@@ -139,17 +139,16 @@ async fn test_signup_signin() {
         }
     }
 
-    // test for username that does not exist
-    let invalid_test_username = format!("invalid_username_{}", Uuid::new_v4().to_string());
-    let invalid_username_signin_res =
-        User::signin(&pool, &invalid_test_username, &user.password).await;
-    assert!(invalid_username_signin_res.is_err());
-    if let Err(err) = invalid_username_signin_res {
+    // test for email that does not exist
+    let not_found_test_email = format!("invalid_email_{}@email.com", Uuid::new_v4().to_string());
+    let not_found_test_user = User::signin(&pool, &not_found_test_email, &user.password).await;
+    assert!(not_found_test_user.is_err());
+    if let Err(err) = not_found_test_user {
         match err {
-            SignInError::UsernameNotFound { requested_username } => {
-                assert_eq!(requested_username, invalid_test_username);
+            SignInError::EmailNotFound { requested_email } => {
+                assert_eq!(requested_email, not_found_test_email);
             }
-            err => panic!("unexpected error (should be username_not_found): {:?}", err),
+            err => panic!("unexpected error (should be email_not_found): {:?}", err),
         }
     }
 

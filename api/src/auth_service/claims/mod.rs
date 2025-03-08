@@ -3,12 +3,12 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use serde::{Deserialize, Serialize};
 pub mod error;
 use error::ClaimsError;
-
+use uuid::Uuid;
 pub type JwtTokenString = String;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JwtClaims {
-    pub user_id: String,
+    pub user_id: uuid::Uuid,
     exp: usize,
 }
 
@@ -18,10 +18,11 @@ impl JwtClaims {
     // todo add this to .env
     const SECRET_KEY: &str = "Super-Secret-Key";
 
-    pub fn new(user_id: &str) -> Self {
+    pub fn new(user_id: Uuid) -> Self {
         let exp = (Utc::now() + Duration::days(Self::TOKEN_LIFETIME_IN_DAYS)).timestamp() as usize;
+
         Self {
-            user_id: user_id.to_string(),
+            user_id: user_id,
             exp,
         }
     }

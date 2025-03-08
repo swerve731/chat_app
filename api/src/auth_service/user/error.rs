@@ -4,7 +4,7 @@ use axum::{
     http::{self},
     response::IntoResponse,
 };
-use derive_more::From;
+use derive_more::{Debug, From};
 
 #[derive(Debug, From)]
 pub enum SignInError {
@@ -144,6 +144,27 @@ impl IntoResponse for SignUpError {
                     tracing::error!("Argon2 hashing error in signup {:?}", e);
                     http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
                 }
+        }
+    }
+}
+
+#[derive(From, Debug)]
+pub enum UserSearchError {
+    NoUsersFound,
+    #[from]
+    Database(sqlx::Error),
+}
+
+impl IntoResponse for UserSearchError {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            Self::NoUsersFound => {
+                (http::status::StatusCode::NOT_FOUND, "No users found.").into_response()
+            }
+            Self::Database(e) => {
+                tracing::error!("Database error while searching users {:?}", e);
+                http::status::StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
+use super::error::ConversationError;
+use super::message::Message;
 use axum::response::Result;
 use chrono::NaiveDateTime;
-use error::ConversationError;
-use message::Message;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -22,7 +22,7 @@ impl Conversation {
     pub async fn get_conversations_with_user_id(
         pool: &PgPool,
         user_id: Uuid,
-    ) -> Result(Vec<Conversation>, ConversationError) {
+    ) -> Result<Vec<Conversation>, ConversationError> {
         let conversations = sqlx::query_as!(
             Conversation,
             r#"

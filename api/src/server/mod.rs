@@ -1,6 +1,6 @@
 use derive_more::From;
 
-use crate::auth_service::router::auth_routes;
+use crate::{auth_service::router::auth_routes, conversation_service::routes::conversation_routes};
 use axum::{
     extract::MatchedPath,
     http::{self, Request},
@@ -55,12 +55,15 @@ pub async fn run_server() -> Result<(), crate::ServerError> {
     let app_state = AppState::new(pool);
 
     let auth_routes = auth_routes(app_state.clone());
+    let conversation_routes = conversation_routes(app_state.clone());
+
     let app = Router::new()
         .route(
             "/health",
             get(|| async { "All good! will run cargo test with this request later" }),
         )
         .nest("/auth", auth_routes)
+        .nest("/conversation", conversation_routes)
         .with_state(app_state)
         .layer(cors)
         .layer(

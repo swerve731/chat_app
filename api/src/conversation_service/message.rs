@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // id UUID PRIMARY KEY,
@@ -7,7 +8,7 @@ use uuid::Uuid;
 // reciever_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
 // sent_at TIMESTAMP NOT NULL
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Message {
     pub id: Uuid,
     pub conversation_id: Uuid,

@@ -25,6 +25,9 @@ pub enum AppError {
 
     #[from]
     Server(ServerError),
+
+    #[from]
+    Conversation(conversation_service::error::ConversationError),
 }
 
 // Note: Implement Display as debug, for Web and app error, as anyway those errors will need to be streamed as JSON probably

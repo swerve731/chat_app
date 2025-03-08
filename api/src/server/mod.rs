@@ -2,14 +2,13 @@ use derive_more::From;
 
 use crate::auth_service::router::auth_routes;
 use axum::{
-    extract::{MatchedPath, State},
-    http::{self, header, Request},
-    response::{IntoResponse, Response},
+    extract::MatchedPath,
+    http::{self, Request},
+    response::Response,
     routing::*,
-    Form, Router,
+    Router,
 };
 use http::Method;
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;

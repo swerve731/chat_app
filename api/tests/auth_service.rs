@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use api::{
     auth_service::{
         claims::*,
@@ -19,7 +17,7 @@ pub fn truncate_created_at(user: &mut User) {
 
 #[test]
 fn test_jwt() {
-    let user_id = "1234";
+    let user_id = Uuid::new_v4();
     let user_claims = JwtClaims::new(user_id);
 
     let token = user_claims.encode().expect("error encoding jwt");
@@ -93,12 +91,9 @@ async fn test_signup_signin() {
         .expect("error signing up user");
 
     let claims = JwtClaims::decode(&token).expect("error decoding jwt token");
-    let mut user = User::get_user_by_id(
-        &pool,
-        Uuid::from_str(&claims.user_id).expect("error converting to uuid"),
-    )
-    .await
-    .expect("error getting user by id");
+    let mut user = User::get_user_by_id(&pool, claims.user_id)
+        .await
+        .expect("error getting user by id");
     truncate_created_at(&mut user); // to set the precision so that the tests match in precision
 
     // check that the user was created
@@ -127,7 +122,7 @@ async fn test_signup_signin() {
         .expect("error signing in user");
     let claims = JwtClaims::decode(&signin_jwt).expect("Error decoding jwt to claims");
 
-    assert_eq!(user.id.to_string(), claims.user_id);
+    assert_eq!(user.id, claims.user_id);
 
     // test for wrong password
     let wrong_password_signin_res = User::signin(&pool, &user.email, "WrongPassword").await;

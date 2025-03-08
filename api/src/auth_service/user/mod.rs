@@ -53,7 +53,7 @@ impl User {
                     tracing::error!("Unexpected Error {:?} in password verification", e);
                     return Err(SignInError::PasswordHashing(e));
                 } else {
-                    let claims = JwtClaims::new(&user.id.to_string());
+                    let claims = JwtClaims::new(user.id);
                     let token = claims.encode()?;
 
                     return Ok(token);
@@ -96,7 +96,7 @@ impl User {
         .execute(pool)
         .await?;
 
-        let jwt_token = JwtClaims::new(&id.to_string()).encode()?;
+        let jwt_token = JwtClaims::new(id).encode()?;
 
         Ok(jwt_token)
     }

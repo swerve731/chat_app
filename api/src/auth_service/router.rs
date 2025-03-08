@@ -77,7 +77,6 @@ pub async fn signup_service(
     Form(form): Form<AuthForm>,
 ) -> impl IntoResponse {
     let pool = &state.pool;
-    println!("HERE");
     let signup_res = User::signup(pool, &form.email, &form.password).await;
 
     match signup_res {

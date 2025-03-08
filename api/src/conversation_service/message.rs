@@ -1,7 +1,6 @@
 use chrono::NaiveDateTime;
 use uuid::Uuid;
 
-pub mod error;
 // id UUID PRIMARY KEY,
 // conversation_id UUID NOT NULL REFERENCES conversations (id) ON DELETE CASCADE,
 // sender_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,

@@ -1,7 +1,8 @@
 use super::claims::*;
 pub mod error;
 use chrono::NaiveDateTime;
-use error::{SignInError, SignUpError};
+use error::{SignInError, SignUpError, UserSearchError};
+use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool};
 use uuid::Uuid;
 
@@ -10,7 +11,7 @@ use argon2::{
     Argon2,
 };
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
@@ -20,7 +21,20 @@ pub struct User {
 
 impl User {
     pub const MIN_PASSWORD_LENGTH: usize = 6;
+    pub async fn search_users(
+        pool: &PgPool,
+        search_request: &str,
+    ) -> Result<Vec<User>, UserSearchError> {
+        let search_results = query_as!(
+            User,
+            "SELECT id, email, password, created_at FROM users WHERE email LIKE $1",
+            format!("%{}%", search_request)
+        )
+        .fetch_all(pool)
+        .await?;
 
+        Ok(search_results)
+    }
     pub async fn signin(
         pool: &PgPool,
         email: &str,

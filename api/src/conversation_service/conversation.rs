@@ -19,6 +19,25 @@ impl Conversation {
     // start (creates a new conversation between users) -> conversation_id
     // pair exists (to check if there is a conversation already exists between two users before starting a new one)-> Option<conversation_id>
 
+    pub async fn get_conversations_with_user_id(
+        pool: &PgPool,
+        user_id: Uuid,
+    ) -> Result(Vec<Conversation>, ConversationError) {
+        let conversations = sqlx::query_as!(
+            Conversation,
+            r#"
+            SELECT *
+            FROM conversations
+            WHERE sender_id = $1 OR receiver_id = $1
+            "#,
+            user_id,
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(conversations)
+    }
+
     pub async fn send_message(
         pool: &PgPool,
         sender_id: Uuid,

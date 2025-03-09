@@ -19,12 +19,28 @@ pub struct User {
     pub created_at: NaiveDateTime,
 }
 
+// this is for public user search results
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublicUserData {
+    pub id: Uuid,
+    pub email: String,
+}
+
+impl From<&User> for PublicUserData {
+    fn from(user: &User) -> Self {
+        PublicUserData {
+            id: user.id,
+            email: user.email.clone(),
+        }
+    }
+}
+
 impl User {
     pub const MIN_PASSWORD_LENGTH: usize = 6;
     pub async fn search_users(
         pool: &PgPool,
         search_request: &str,
-    ) -> Result<Vec<User>, UserSearchError> {
+    ) -> Result<Vec<PublicUserData>, UserSearchError> {
         let search_results = query_as!(
             User,
             "SELECT id, email, password, created_at FROM users WHERE email LIKE $1",
@@ -33,7 +49,12 @@ impl User {
         .fetch_all(pool)
         .await?;
 
-        Ok(search_results)
+        let public_data: Vec<PublicUserData> = search_results
+            .iter()
+            .map(|u| PublicUserData::from(u))
+            .collect();
+
+        Ok(public_data)
     }
     pub async fn signin(
         pool: &PgPool,

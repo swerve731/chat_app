@@ -14,7 +14,7 @@ A real-time chat application built with Rust, Axum, Tauri, Svelte, and PostgreSQ
     ```
 - Sqlx Cli
     ```bash
-    cargo install sqlx-cli
+    cargo install sqlx-cli --no-default-features --features postgres
     ```
 ## Project Structure
 
@@ -41,7 +41,11 @@ A real-time chat application built with Rust, Axum, Tauri, Svelte, and PostgreSQ
     ```bash
     cd api
     ```
-2. **Start the API:**
+2. **Run sqlx migrations to initialize db**
+    ```bash
+    sqlx migrate run
+    ```
+3. **Start the API:**
     ```bash
     cargo run
     ```

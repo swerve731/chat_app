@@ -34,6 +34,7 @@
           <p class="text-lg font-semibold">{item.name}</p>
           <p class="text-base text-gray-500 dark:text-gray-400">{item.contact}</p>
         </div>
+
       </div>
       <div class="text-sm text-gray-500 dark:text-gray-400">
         {item.lastMessage}

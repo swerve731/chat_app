@@ -1,7 +1,5 @@
 use sqlx::PgPool;
 
-pub mod messages;
-
 const DATABASE_URL: &str = "postgres://chat_user:chat_password@localhost:5432/chat_db";
 
 pub async fn get_connection_pool() -> Result<PgPool, sqlx::Error> {

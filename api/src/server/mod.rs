@@ -1,6 +1,6 @@
 use derive_more::From;
 
-use crate::{auth_service::router::auth_routes, conversation_service::routes::conversation_routes};
+use crate::{auth_service::router::auth_routes, conversation_service::router::conversation_routes};
 use axum::{
     extract::MatchedPath,
     http::{self, Request},
